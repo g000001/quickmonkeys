@@ -16,7 +16,7 @@ Define patch (in monkeys.lisp)
 - Step 3.
 Load it
 
-: CL-USER> (asdf:load-system :arnesi)
+: CL-USER> (asdf:load-system bad-system)
 : ;;; Patching: BAD-SYSTEM #<ASDF:CL-SOURCE-FILE "bad-file"> ...
 : 
 :      w  c(..)o   ( 

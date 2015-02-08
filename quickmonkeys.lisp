@@ -2,18 +2,22 @@
 
 (cl:in-package :quickmonkeys)
 
+(defvar *component-class*
+  #+(and :asdf2 (not :asdf3)) 'asdf::COMPONENTS
+  #+asdf3 'asdf::CHILDREN)
+
 
 (Defun system-components (system)
   (Slot-Value (asdf::component-system system)
-              'asdf::COMPONENTS))
+              *component-class*))
 
 
 (Defun has-components-p (obj)
-  (Slot-Exists-P obj 'asdf::COMPONENTS))
+  (Slot-Exists-P obj *component-class*))
 
 
 (Defun components (obj)
-  (Slot-Value obj 'asdf::COMPONENTS))
+  (Slot-Value obj *component-class*))
 
 
 (Defun flatten-components (compos)
@@ -31,11 +35,15 @@
   (Find name
         (flatten-components (system-components system))
         :test #'String=
-        :key (Lambda (c) (Slot-Value c 'asdf::name))))
+        :key (Lambda (c)
+               (when (Slot-Exists-P c 'asdf::name)
+                 (Slot-Value c 'asdf::name)))))
 
 
 (Defun source-component-name (sc)
-  (Slot-Value sc 'asdf::name))
+  (if (Slot-Exists-P sc 'asdf::name)
+      (Slot-Value sc 'asdf::name)
+      ""))
 
 
 (Defun do-patch (orig patch)
@@ -59,15 +67,15 @@
                 orig
                 oc)
         (asdf:perform operation pc))))
-  (when (#+asdf3 asdf::system-loaded-p
-         #+asdf2 asdf::component-loaded-p
+  (when (#+(and asdf2 (not asdf3)) asdf::system-loaded-p
+         #+asdf3 asdf::component-loaded-p
          (find-system orig))
     (load-system orig :force (List orig))))
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun kludgy-fix (name patch-name)
-    #+(or clisp lispworks)
+    #+(or clisp lispworks allegro-v8.2 cmucl)
     (progn
       (setf (slot-value (find-system patch-name) 'asdf::SOURCE-FILE)
             (system-source-file (find-system :quickmonkeys)))

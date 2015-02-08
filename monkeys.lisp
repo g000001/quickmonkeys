@@ -31,9 +31,30 @@
   :components ((:file "lexenv")))
 
 
-#+#:obsolete
+#+allegro
 (defpatch :cl-oauth
-  :components ((:file "consumer")))
+    :components (#+#:obsolete
+                 (:file "consumer")
+                 (:file "uri")))
+
+
+#+cmu
+(defpatch :ironclad
+  :components ((:file "modes")))
+
+
+#+cmu
+(defpatch :kmrcl
+  ;; error: Misplaced declaration.
+    :components ((:file "processes")))
+
+
+#+cmu
+(defpatch :named-readtables
+    ;; fix: type declaration.
+  :components ((:file "define-api")))
 
 
 ;;; *EOF*
+
+
