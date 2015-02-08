@@ -1,0 +1,36 @@
+* QUICKMONKEYS - monkey monkey patch tool
+
+- Step 1.
+: $ mkdir quickmonkeys/monkeys/bad-system
+: $ cp bad-system/bad-file.lisp quickmonkeys/monkeys/bad-system/bad-file.lisp
+
+- Step 2.
+Fix it.
+
+- Step 3.
+Define patch (in monkeys.lisp)
+
+: (defpatch bad-system
+:   :components ((:file "bad-file")))
+
+- Step 3.
+Load it
+
+: CL-USER> (asdf:load-system :arnesi)
+: ;;; Patching: BAD-SYSTEM #<ASDF:CL-SOURCE-FILE "bad-file"> ...
+: 
+:      w  c(..)o   ( 
+:       \__(-)    __)
+:           /\   (
+:          /(_)___)
+:          w /|
+:           | \
+:          m  m    ...
+: 
+: ;;; Compiling file /l/src/rw/quickmonkeys/monkeys/bad-system/bad-file.lisp ...
+
+
+
+
+
+
