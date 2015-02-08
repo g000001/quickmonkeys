@@ -67,9 +67,7 @@
                 orig
                 oc)
         (asdf:perform operation pc))))
-  (when (#+(and asdf2 (not asdf3)) asdf::system-loaded-p
-         #+asdf3 asdf::component-loaded-p
-         (find-system orig))
+  (when (asdf::component-loaded-p (find-system orig))
     (load-system orig :force (List orig))))
 
 
