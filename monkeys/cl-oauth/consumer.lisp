@@ -255,7 +255,7 @@ token. POST is recommended as request method. [6.3.1]" ; TODO 1.0a section numbe
   (let ((from-headers (get-problem-report-from-headers headers)))
     from-headers))
 
-(defun access-protected-resource (uri access-token
+#|(defun access-protected-resource (uri access-token
                                   &rest kwargs
                                   &key
                                     (consumer-token (token-consumer access-token))
@@ -309,6 +309,84 @@ whenever the access token is renewed."
                         :parameters user-parameters
                         :additional-headers additional-headers
                         :drakma-args drakma-args)
+        (if (eql status 200)
+          (values body status)
+          (let* ((problem-report (get-problem-report headers body))
+                 (problem-hint (cdr (assoc "oauth_problem" problem-report :test #'equalp)))
+                 (problem-advice (cdr (assoc "oauth_problem_advice" problem-report :test #'equalp))))
+            (cond
+              ((and (eql status 401)
+                    (equalp problem-hint "token_expired"))
+               (format t "INFO: refreshing access token~%")
+               (let ((new-token (refresh-access-token access-token)))
+                 (when on-refresh
+                   (funcall on-refresh new-token))
+                 (apply #'access-protected-resource uri new-token kwargs)))
+              (t
+(values body status problem-hint problem-advice)))))))))|#
+
+(defun access-protected-resource (uri access-token
+                                  &rest kwargs
+                                  &key
+                                    (consumer-token (token-consumer access-token))
+                                    on-refresh
+                                    (timestamp (get-unix-time))
+                                    user-parameters
+                                    additional-headers
+                                    (version :1.0)
+                                    drakma-args
+                                    (auth-location :header)
+                                    (request-method :get)
+                                    (signature-method :hmac-sha1)
+                                    (include-user-parameters-in-signature-p t))
+  "Access the protected resource at URI using ACCESS-TOKEN.
+
+If the token contains OAuth Session information it will be checked for
+validity before the request is made. Should the server notify us that
+it has prematurely expired the token will be refresh as well and the
+request sent again using the new token. ON-REFRESH will be called
+whenever the access token is renewed."
+  (setf access-token (maybe-refresh-access-token access-token on-refresh))
+  (multiple-value-bind (normalized-uri query-string-parameters) (normalize-uri uri)
+    (let* ((auth-parameters (generate-auth-parameters consumer-token
+                                                      signature-method
+                                                      timestamp
+                                                      version
+                                                      access-token))
+           (sbs (signature-base-string :uri normalized-uri
+                                       :request-method request-method
+                                       :parameters (sort-parameters (copy-alist (if include-user-parameters-in-signature-p
+                                                                                    (append query-string-parameters user-parameters auth-parameters)
+                                                                                    auth-parameters)))))
+           (key (hmac-key (token-secret consumer-token) (token-secret access-token)))
+           (signature (encode-signature (hmac-sha1 sbs key) nil))
+           (signed-parameters (cons `("oauth_signature" . ,signature) auth-parameters)))
+      (when (and (eql request-method :post)
+                 user-parameters)
+        (assert (and (not (getf drakma-args :content-type))
+                     (not (getf drakma-args :content)))
+                () "User parameters and content/content-type in drakma arguments cannot be combined")
+        (setf drakma-args (list* :content-type "application/x-www-form-urlencoded"
+                                 :content (alist->query-string user-parameters
+                                                               :url-encode t
+                                                               :include-leading-ampersand nil)
+                                 drakma-args)))
+      (multiple-value-bind (body status headers)
+          (if (and (not (eql request-method :post))
+                   user-parameters)
+              (http-request uri
+                            :method request-method
+                            :auth-location auth-location
+                            :auth-parameters signed-parameters
+                            :additional-headers additional-headers
+                            :parameters user-parameters
+                            :drakma-args drakma-args)
+              (http-request uri
+                         :method request-method
+                         :auth-location auth-location
+                         :auth-parameters signed-parameters
+                         :additional-headers additional-headers
+                         :drakma-args drakma-args))
         (if (eql status 200)
           (values body status)
           (let* ((problem-report (get-problem-report headers body))

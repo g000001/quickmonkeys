@@ -71,21 +71,20 @@
     (load-system orig :force (List orig))))
 
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun kludgy-fix (name patch-name)
-    #+(or clisp lispworks allegro-v8.2 cmucl)
-    (progn
-      (setf (slot-value (find-system patch-name) 'asdf::SOURCE-FILE)
-            (system-source-file (find-system :quickmonkeys)))
-      (dolist (c (flatten-components (system-components (find-system patch-name))))
-        (setf (slot-value c 'asdf::ABSOLUTE-PATHNAME)
-              (merge-pathnames (make-pathname
-                                :directory (list :relative "monkeys"
-                                                 (string-downcase name))
-                                :name (Slot-Value c 'asdf::name)
-                                :type "lisp")
-                               (system-source-directory
-                                (find-system :quickmonkeys))))))))
+(defun kludgy-fix (name patch-name)
+  #+asdf3
+  (progn
+    (setf (slot-value (find-system patch-name) 'asdf::SOURCE-FILE)
+          (system-source-file (find-system :quickmonkeys)))
+    (dolist (c (flatten-components (system-components (find-system patch-name))))
+      (setf (slot-value c 'asdf::ABSOLUTE-PATHNAME)
+            (merge-pathnames (make-pathname
+                              :directory (list :relative "monkeys"
+                                               (string-downcase name))
+                              :name (Slot-Value c 'asdf::name)
+                              :type "lisp")
+                             (system-source-directory
+                              (find-system :quickmonkeys)))))))
 
 
 (defmacro defpatch (name &body files)

@@ -31,10 +31,8 @@
   :components ((:file "lexenv")))
 
 
-#+allegro
 (defpatch :cl-oauth
-    :components (#+#:obsolete
-                 (:file "consumer")
+    :components ((:file "consumer")
                  (:file "uri")))
 
 
