@@ -26,7 +26,7 @@
   :components ((:file "request")))
 
 
-#+lispworks6
+#+(or lispworks6 lispworks5)
 (defpatch :arnesi
   :components ((:file "lexenv")))
 
