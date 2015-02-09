@@ -67,12 +67,10 @@
                 orig
                 oc)
         (asdf:perform operation pc))))
-  (when (asdf::component-loaded-p (find-system orig))
-    (load-system orig :force (List orig))))
+  (compile-system orig :force (List orig)))
 
 
 (defun kludgy-fix (name patch-name)
-  #+asdf3
   (progn
     (setf (slot-value (find-system patch-name) 'asdf::SOURCE-FILE)
           (system-source-file (find-system :quickmonkeys)))
